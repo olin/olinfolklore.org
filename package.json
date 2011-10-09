@@ -1,0 +1,15 @@
+{
+  "name": "olinfolklore.org",
+  "version": "0.0.1",
+  "dependencies": {
+    "bcrypt": "0.4.0",
+    "coffee-script": "1.1.2",
+    "coffeekup": "0.3.0",
+    "connect-form": "0.2.1",
+    "connect-mongo": "0.1.5",
+    "express": "2.4.6",
+    "mime": "1.2.3",
+    "mongoose": "2.1.2",
+    "pour": "0.0.3"
+  }
+}
