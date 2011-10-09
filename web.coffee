@@ -20,11 +20,11 @@ coffeekup = require 'coffeekup'
 # -------------
 
 config =
-	MONGO_USER: ''
-	MONGO_PASS: ''
-	MONGO_HOST: ''
-	MONGO_PORT: ''
-	MONGO_DB: ''
+	MONGO_USER: 'heroku_app1398322'
+	MONGO_PASS: 'a160eaj59k4m50hv5t7plnta9r'
+	MONGO_HOST: 'dbh55.mongolab.com'
+	MONGO_PORT: '27557'
+	MONGO_DB: 'heroku_app1398322'
 
 ############################################################################
 # app setup
@@ -50,7 +50,6 @@ app.set 'view engine', 'coffee'
 mongoose.connect "mongodb://" +
 	"#{config.MONGO_USER}:#{config.MONGO_PASS}@" +
 	"#{config.MONGO_HOST}:#{config.MONGO_PORT}/#{config.MONGO_DB}"
-###
 app.use express.session
 	secret: "animorphs",
 	store: new MongoStore
@@ -59,7 +58,6 @@ app.use express.session
 		db: config.MONGO_DB
 		username: config.MONGO_USER
 		password: config.MONGO_PASS
-###
 
 #app.configure 'development', ->
 #	mongoose.connect 'mongodb://localhost/mache'
