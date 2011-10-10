@@ -71,42 +71,7 @@ app.use express.session
 # routes
 ############################################################################
 
-#
-# main page
-#
-
-app.get '/', (req, res) ->
-	Story.find {}, (err, stories) ->
-		res.send """
-
-<h1>Olinfolklore</h1>
-<p>#{if req.session.user then "Logged in as #{req.session.user.name}. <a href='/logout'>Logout?</a>" else 'Not currently logged in. <a href="/login">Sign in?</a>'}</p>
-
-<h2>Stories</h2>
-<ul>
-#{"<li><a href='/stories/#{story.id}'>#{story.title}</a><br>
-<em>#{story.occurred}</em></li>" for story in stories}
-</ul>
-<button id="signin">Sign in</button>
-<script src="https://diresworb.org/include.js" type="text/javascript"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
-<script>
-document.getElementById('signin').onclick = function () {
-navigator.id.getVerifiedEmail(function(assertion) {
-    if (assertion) {
-       console.log(assertion);
-       $.post('/identities', {assertion: assertion}, function (data) {
-       		console.log(data);
-       });
-    } else {
-        // something went wrong!  the user isn't logged in.
-    }
-});
-}
-</script>
-"""
-
-app.post "/identities", (req, res) ->
+verifyEmail = (assertion, cb) ->
 	opts =
 		host: 'diresworb.org'
 		path: "/verify"
@@ -125,76 +90,97 @@ app.post "/identities", (req, res) ->
 					console.log "assertion verified successfully for email:", email
 				else
 					console.log "failed to verify assertion:", verifierResp.reason
-				res.json email
+				cb email
 			catch e
 				console.log "non-JSON response from verifier"
-				res.json null
+				cb null
 	vreq.setHeader "Content-Type", "application/x-www-form-urlencoded"
-	audience = (if req.headers["host"] then req.headers["host"] else 'olinfolklore.org')
+	audience = (if req.headers["host"] then req.headers["host"] else 'localhost')
 	data = querystring.stringify
-		assertion: req.body.assertion
+		assertion: assertion
 		audience: audience
 	vreq.setHeader "Content-Length", data.length
 	vreq.write data
 	vreq.end()
 	console.log "verifying assertion!"
 
-app.get '/register', (req, res) ->
-	res.send '''
-<h1>New Users/Update Password</h1>
-<form method="post">
-<label>Email address (must be @students.olin.edu or @alumni.olin.edu): <input type="text" name="email"></label><br>
-<label>Full Name: <input type="text" name="name"></label><br>
-<label>Password: <input type="password" name="password"></label><br>
-<button type="submit">Register/Update password</button>
-<p style="color: red">JK YOU DONT NEED A VALID EMAIL ADDRESS YET</p>
-</form>
-'''
+# Middleware.
 
-app.post '/register', (req, res) ->
-	if not req.body.email or not req.body.password or not req.body.name
-		res.send """<p>Invalid data. <a href="/register">Try again?</a></p>"""
-		return
+populateUser = (req, res, next) ->
+	if req.session.user
+		User.findById req.session.user, (err, user) ->
+			if user
+				req.user = user
+				next()
+			else
+				res.redirect '/login'
+	else
+		res.redirect '/login'
 
-	user = new User()
-	user._id = req.body.email
-	user.name = req.body.name
-	salt = bcrypt.gen_salt_sync 10
-	user.password = bcrypt.encrypt_sync config.secret, salt
-	user.password = req.body.password
-	user.registered = new Date()
-	user.save()
+#
+# main page
+#
 
-	req.session.user = user
+app.get '/', populateUser, (req, res) ->
+	Story.find {}, (err, stories) ->
+		res.send """
 
-	res.send """
-<p>Welcome #{req.body.email}!</p>
-<p><a href="/">Continue...</a></p>
+<h1>Olinfolklore</h1>
+<p>Logged in as #{req.user.name} (#{req.user._id}).</p>
+
+<h2>Stories</h2>
+<ul>
+#{"<li><a href='/stories/#{story.id}'>#{story.title}</a><br>
+<em>#{story.occurred}</em></li>" for story in stories}
+</ul>
 """
 
-app.get '/login', (req, res) ->
+app.get "/login", (req, res) ->
 	res.send """
-<h1>Login</h1>
-<form method="post">
-<label>Email address (must be @students.olin.edu or @alumni.olin.edu): <input type="text" name="email"></label><br>
-<label>Password: <input type="password" name="password"></label><br>
-<button type="submit">Login</button>
-</form>
+<h1>Log in</h1>
+<p>In order to view Olinfolklore.org, you must first <button id="signin">Sign in</button>.</p>
+<script src="https://diresworb.org/include.js" type="text/javascript"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+<script>
+document.getElementById('signin').onclick = function () {
+navigator.id.getVerifiedEmail(function(assertion) {
+    if (assertion) {
+       console.log(assertion);
+       $.post('/login', {assertion: assertion}, function (data) {
+       		console.log(data);
+       });
+    } else {
+        // something went wrong!  the user isn't logged in.
+    }
+});
+}
+</script>
 """
 
-app.post '/login', (req, res) ->
-	User.findById req.body.email, (err, user) -> 
-		if not user or not bcrypt.compare_sync(config.secret, user.password)
-			res.send """<p>Invalid data. <a href="/login">Try again?</a></p>"""
-			return
+app.post "/login", (req, res) ->
+	verifyEmail req.body.assertion, (email) ->
+		if not email
+			res.send {email: null, message: "Not able to verify email address."}
+		# else if email isn't an olin email
+		else
+			res.session.user = "timothy.ryan@students.olin.edu"
 
-		user.remove()
-		res.send "LOL DEAD"
-		
-		#req.session.user = user
-		#res.redirect '/'
+			# Create user if she doesn't exist.
+			User.findById res.session.user, (err, user) ->
+				if not user
+					user = new User()
+					user._id = email
+					user.name = email.replace /@.*$/, ''
+					user.registered = new Date()
+					user.save()
 
-app.get '/stories/', (req, res) ->
+				res.send {email: email, message: "You are now logged in as #{email}."}
+
+app.post "/logout", (req, res) ->
+	req.session.user = null
+	res.redirect '/login'
+
+app.get '/stories/', populateUser, (req, res) ->
 	res.send '''
 <h1>Submit a new story</h1>
 <form method="post">
@@ -210,9 +196,9 @@ app.get '/stories/', (req, res) ->
 </form>
 '''
 
-app.post '/stories/', (req, res) ->
+app.post '/stories/', populateUser, (req, res) ->
 	story = new Story()
-	story.user = req.session.user._id
+	story.user = req.user._id
 	story.time = new Date()
 	story.occurred = req.body.date
 	story.title = req.body.title
@@ -226,7 +212,7 @@ app.post '/stories/', (req, res) ->
 <p>You can view it <a href="/stories/#{story.id}">here</a>.</p>
 """
 
-app.get '/stories/:id', (req, res) ->
+app.get '/stories/:id', populateUser, (req, res) ->
 	Story.findById req.params.id, (err, story) ->
 		if not story
 			res.send "No story by that ID found."
@@ -252,7 +238,7 @@ app.get '/stories/:id', (req, res) ->
 <div style="white-space: pre">
 #{story.content}
 </div>
-#{if req.session.user?._id in story.favorites then '
+#{if req.user._id in story.favorites then '
 <form method="post">You have favorited this story.
 <input type="hidden" name="action" value="unfavorite">
 <button type="Submit">Undo?</button>
@@ -273,7 +259,7 @@ app.get '/stories/:id', (req, res) ->
 </form>
 """
 
-app.post '/stories/:id', (req, res) ->
+app.post '/stories/:id', populateUser, (req, res) ->
 	Story.findById req.params.id, (err, story) ->
 		if not story
 			res.send "No story by that ID found."
@@ -281,16 +267,16 @@ app.post '/stories/:id', (req, res) ->
 		
 		switch req.body.action
 			when 'favorite'
-				story.favorites.push req.session.user._id
+				story.favorites.push req.user._id
 				console.log story
 				story.save()
 			when 'unfavorite'
-				if (i = story.favorites.indexOf req.session.user._id) != -1
+				if (i = story.favorites.indexOf req.user._id) != -1
 					story.favorites = story.favorites.splice i, 1
 				story.save()
 			when 'comment'
 				story.comments.push
-					user: req.session.user._id
+					user: req.user._id
 					content: req.body.comment
 					time: new Date()
 				story.save()
