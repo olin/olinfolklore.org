@@ -106,28 +106,38 @@ navigator.id.getVerifiedEmail(function(assertion) {
 </script>
 """
 
-app.post '/identities', (req, res) ->
-	postbody = require('querystring').stringify
-		audience: 'olinfolklore.herokuapp.com'
-		assertion: req.body.assertion
-	
-	console.log postbody
-
-	opts = 
+app.post "/identities", (req, res) ->
+	opts =
 		host: 'browserid.org'
-		port: 443
-		path: '/verify'
-		method: 'POST'
-		headers: {"content-length": postbody.length}
-	idreq = require('https').request opts, (idres) ->
-		console.log('STATUS: ' + idres.statusCode)
-		console.log('HEADERS: ' + JSON.stringify(idres.headers))
-		idres.setEncoding 'utf8'
-		idres.on 'data', (body) ->
-			console.log body
-			res.send body
-	idreq.write postbody
-	idreq.end()
+		path: "/verify"
+		method: "POST"
+	vreq = require('https').request opts, (vres) ->
+		body = ""
+		vres.on("data", (chunk) ->
+			body += chunk
+		).on "end", ->
+			try
+				verifierResp = JSON.parse(body)
+				valid = verifierResp and verifierResp.status == "okay"
+				email = (if valid then verifierResp.email else null)
+				req.session.email = email
+				if valid
+					console.log "assertion verified successfully for email:", email
+				else
+					console.log "failed to verify assertion:", verifierResp.reason
+					res.json email
+			catch e
+				console.log "non-JSON response from verifier"
+				res.json null
+	vreq.setHeader "Content-Type", "application/x-www-form-urlencoded"
+	audience = (if req.headers["host"] then req.headers["host"] else 'olinfolklore.org')
+	data = querystring.stringify
+		assertion: req.body.assertion
+		audience: audience
+	vreq.setHeader "Content-Length", data.length
+	vreq.write data
+	vreq.end()
+	console.log "verifying assertion!"
 
 app.get '/register', (req, res) ->
 	res.send '''
