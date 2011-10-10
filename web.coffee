@@ -167,7 +167,7 @@ app.post "/login", (req, res) ->
 			req.session.user = "timothy.ryan@students.olin.edu"
 
 			# Create user if she doesn't exist.
-			User.findById res.session.user, (err, user) ->
+			User.findById req.session.user, (err, user) ->
 				if not user
 					user = new User()
 					user._id = email
