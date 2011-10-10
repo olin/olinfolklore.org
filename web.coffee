@@ -88,7 +88,7 @@ app.get '/', (req, res) ->
 <em>#{story.occurred}</em></li>" for story in stories}
 </ul>
 <button id="signin">Sign in</button>
-<script src="https://browserid.org/include.js" type="text/javascript"></script>
+<script src="https://diresworb.org/include.js" type="text/javascript"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
 <script>
 document.getElementById('signin').onclick = function () {
@@ -108,7 +108,7 @@ navigator.id.getVerifiedEmail(function(assertion) {
 
 app.post "/identities", (req, res) ->
 	opts =
-		host: 'browserid.org'
+		host: 'diresworb.org'
 		path: "/verify"
 		method: "POST"
 	vreq = require('https').request opts, (vres) ->
