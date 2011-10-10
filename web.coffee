@@ -71,7 +71,7 @@ app.use express.session
 # routes
 ############################################################################
 
-verifyEmail = (req, assertion, cb) ->
+verifyEmail = (audience, assertion, cb) ->
 	opts =
 		host: 'diresworb.org'
 		path: "/verify"
@@ -85,7 +85,6 @@ verifyEmail = (req, assertion, cb) ->
 				verifierResp = JSON.parse(body)
 				valid = verifierResp and verifierResp.status == "okay"
 				email = (if valid then verifierResp.email else null)
-				req.session.email = email
 				if valid
 					console.log "assertion verified successfully for email:", email
 				else
@@ -95,7 +94,6 @@ verifyEmail = (req, assertion, cb) ->
 				console.log "non-JSON response from verifier"
 				cb null
 	vreq.setHeader "Content-Type", "application/x-www-form-urlencoded"
-	audience = (if req.headers["host"] then req.headers["host"] else 'localhost')
 	data = querystring.stringify
 		assertion: assertion
 		audience: audience
@@ -158,7 +156,10 @@ navigator.id.getVerifiedEmail(function(assertion) {
 """
 
 app.post "/login", (req, res) ->
-	verifyEmail req, req.body.assertion, (email) ->
+	audience = (if req.headers["host"] then req.headers["host"] else 'localhost')
+	assertion = req.body.assertion
+
+	verifyEmail audience, assertion, (email) ->
 		if not email
 			res.send {email: null, message: "Not able to verify email address."}
 		# else if email isn't an olin email
