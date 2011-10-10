@@ -1,0 +1,39 @@
+#story
+  h2 #{story.title}
+  p.summary: em #{story.summary}
+  dl.story-data
+    dt Author:
+    dd #{author? author.name : "Unknown"}
+    dt Tags:
+    dd #{story.tags.join(', ')}
+
+  div#story-content
+    | !{html}
+
+if (story.favorites.indexOf(req.user._id) != -1)
+  form(method="post")
+    | You have favorited this story.
+    input(type="hidden", name="action", value="unfavorite")
+    button(type="submit") Undo?
+else
+  form(method="post")
+    input(type="hidden", name="action", value="favorite")
+    button(type="submit") Favorite this story
+
+h3 Comments
+if (comments.length)
+  ul.comments
+  each comment in comments
+    li
+      b= comment.user.name
+      br
+      | #{comment.content}
+else
+  p There are no comments yet.
+
+h4 Post a comment
+form(method="post")
+  input(type="hidden", name="action", value="comment")
+  textarea(rows="7", cols="50", name="comment")
+  br
+  button(type="submit") Submit a comment

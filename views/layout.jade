@@ -1,0 +1,21 @@
+!!! 5
+html(lang='en')
+  head
+    title= "Olinfolklore.org"
+    
+    script(type="text/javacript", src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js")
+    script(src="/static/code.js")
+
+    link(href='http://fonts.googleapis.com/css?family=Redressed', rel='stylesheet', type='text/css')
+    link(href="/static/style.css", rel="stylesheet")
+  
+  body
+    #header-wrap
+      #header
+        h1: a(href='/') Olinfolklore.org
+        form#user-status(method='post', action='/logout')
+          p Logged in as <a href="/profile" title="req.user._id">#{req.user.name}</a>. <button type="submit">Logout?</button>
+
+    #content !{body}
+
+    #footer An Olin SLAC production.

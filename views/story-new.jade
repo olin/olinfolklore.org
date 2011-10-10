@@ -1,0 +1,18 @@
+h2 Submit a new story
+form(method="post")
+  label Title: <input type="text" name="title">
+  br
+  label Date (YYYY-MM-DD): <input type="date" name="date">
+  br
+  label Tags (comma-separated): <input type="text" name="tags">
+  br
+
+  // characters
+  label Summary (max 140 chars): <input type="text" maxlength="140" name="summary">
+  br
+  label Story:
+  br
+  textarea(rows="25", cols="100", name="content")
+
+  // submit
+  button(type="submit") Submit Story

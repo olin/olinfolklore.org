@@ -11,7 +11,9 @@ querystring = require 'querystring'
 [serial, parallel] = require 'pour'
 MongoStore = require 'connect-mongo'
 mongoose = require 'mongoose'
+{markdown} = require "markdown"
 coffeekup = require 'coffeekup'
+url = require 'url'
 
 # local modules
 {User, Comment, Story} = require './models'
@@ -41,8 +43,7 @@ app.use express.cookieParser()
 app.use express.static(__dirname + '/public')
 app.use express.errorHandler(dumpExceptions: true, showStack: true)
 
-app.register '.coffee', coffeekup.adapters.express
-app.set 'view engine', 'coffee'
+app.set 'view engine', 'jade'
 
 #
 # mongo
@@ -102,62 +103,8 @@ verifyEmail = (audience, assertion, cb) ->
 	vreq.end()
 	console.log "verifying assertion!"
 
-# Middleware.
-
-populateUser = (req, res, next) ->
-	if req.session.user
-		User.findById req.session.user, (err, user) ->
-			if user
-				req.user = user
-				next()
-			else
-				res.redirect '/login'
-	else
-		res.redirect '/login'
-
-#
-# main page
-#
-
-app.get '/', populateUser, (req, res) ->
-	Story.find {}, (err, stories) ->
-		res.send """
-
-<h1>Olinfolklore</h1>
-<form method="post" action="/logout">
-<p>Logged in as #{req.user.name} (#{req.user._id}). <button type="submit">Logout?</button></p>
-</form>
-
-<h2>Stories</h2>
-<ul>
-#{"<li><a href='/stories/#{story.id}'>#{story.title}</a><br>
-<em>#{story.occurred}</em></li>" for story in stories}
-</ul>
-"""
-
 app.get "/login", (req, res) ->
-	res.send """
-<h1>Log in</h1>
-<p>In order to view Olinfolklore.org, you must first <button id="signin">Sign in</button>.</p>
-<script src="https://diresworb.org/include.js" type="text/javascript"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
-<script>
-document.getElementById('signin').onclick = function () {
-navigator.id.getVerifiedEmail(function(assertion) {
-    if (assertion) {
-       console.log(assertion);
-       $.post('/login', {assertion: assertion}, function (data) {
-       		alert(data.message);
-       		if (data.email)
-       			window.location.pathname = '/'
-       });
-    } else {
-        // something went wrong!  the user isn't logged in.
-    }
-});
-}
-</script>
-"""
+	res.render 'login', {req, layout: null}
 
 app.post "/login", (req, res) ->
 	audience = (if req.headers["host"] then req.headers["host"] else 'localhost')
@@ -191,23 +138,36 @@ app.post "/logout", (req, res) ->
 	req.session.user = null
 	res.redirect '/login'
 
-app.get '/stories/', populateUser, (req, res) ->
-	res.send '''
-<h1>Submit a new story</h1>
-<form method="post">
-<label>Title: <input type="text" name="title"></label><br>
-<label>Date (YYYY-MM-DD): <input type="date" name="date"></label><br>
-<label>Tags (comma-separated): <input type="text" name="tags"></label><br>
-<!-- characters -->
-<label>Summary (max 140 chars): <input type="text" maxlength="140" name="summary"></label><br>
-<label>Story:<br>
-<textarea rows="30" cols="100" name="content"></textarea></label><br>
-<!-- photos -->
-<button type="submit">Submit Story</button>
-</form>
-'''
+# Middleware.
 
-app.post '/stories/', populateUser, (req, res) ->
+verifyUser = (req, res, next) ->
+	path = url.parse(req.url, true)
+	if path.pathname in ['/login', '/logout']
+		next()
+		return
+
+	if req.session.user
+		User.findById req.session.user, (err, user) ->
+			if user
+				req.user = user
+				next()
+			else
+				res.redirect '/login'
+	else
+		res.redirect '/login'
+
+#
+# main page
+#
+
+app.get '/', verifyUser, (req, res) ->
+	Story.find {}, (err, stories) ->
+		res.render 'index', {req, stories}
+
+app.get '/stories/', verifyUser, (req, res) ->
+	res.render 'story-new', {req}
+
+app.post '/stories/', verifyUser, (req, res) ->
 	story = new Story()
 	story.user = req.user._id
 	story.time = new Date()
@@ -218,12 +178,9 @@ app.post '/stories/', populateUser, (req, res) ->
 	story.content = req.body.content
 	story.save()
 
-	res.send """
-<h1>Story submitted!</h1>
-<p>You can view it <a href="/stories/#{story.id}">here</a>.</p>
-"""
+	res.redirect "/stories/#{story.id}"
 
-app.get '/stories/:id', populateUser, (req, res) ->
+app.get '/stories/:id', verifyUser, (req, res) ->
 	Story.findById req.params.id, (err, story) ->
 		if not story
 			res.send "No story by that ID found."
@@ -239,38 +196,12 @@ app.get '/stories/:id', populateUser, (req, res) ->
 		console.log comments
 
 		User.findById story.user, (err, author) ->
-			res.send """
-<h1>#{story.title}</h1>
-<p class="summary"><em>#{story.summary}</em></p>
-<dl>
-<dt>Author:</dt><dd>#{author?.name}</dd>
-<dt>Tags:</dt><dd>#{story.tags.join(', ')}</dd>
-</dl>
-<div style="white-space: pre">
-#{story.content}
-</div>
-#{if req.user._id in story.favorites then '
-<form method="post">You have favorited this story.
-<input type="hidden" name="action" value="unfavorite">
-<button type="Submit">Undo?</button>
-</form>
-' else '
-<form method="post">
-<input type="hidden" name="action" value="favorite">
-<button type="Submit">Favorite this story</button>
-</form>
-'}
-<h2>Comments</h2>
-#{if story.comments then '<ul class="comments">' + ("<li><b>" + comment.user.name + "</b><br>#{comment.content}</li>" for comment in comments) + '</ul>' else '<p>There are no comments yet.</p>'}
-<h3>Post a comment</h3>
-<form method="post">
-<input type="hidden" name="action" value="comment">
-<textarea rows="7 cols="50" name="comment"></textarea>
-<button type="Submit">Submit a comment</button>
-</form>
-"""
+			# Convert markdown into html.
+			html = markdown.toHTML(story.content)
 
-app.post '/stories/:id', populateUser, (req, res) ->
+			res.render 'story', {req, story, author, comments, html}
+
+app.post '/stories/:id', verifyUser, (req, res) ->
 	Story.findById req.params.id, (err, story) ->
 		if not story
 			res.send "No story by that ID found."

@@ -1,0 +1,52 @@
+html, body { margin: 0; padding: 0; }
+html { font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serf; font-size: 14px; }
+input, button {font-size: inherit;}
+
+
+#header, #content, #footer { width: 800px; margin: 0 auto; }
+
+#header-wrap {
+	background: url(/static/images/fabric.png);
+	border-bottom: #641 5px solid;
+}
+#header {
+	position: relative; height: 75px;
+}
+h1 { margin: 0; font-family: "Redressed", serif; font-size: 48px; line-height: 75px; opacity: 0.7; color: black; }
+h1 a { text-decoration: none; color: inherit; }
+h1 a:hover { opacity: 0.5;}
+#user-status { position: absolute; right: 10px; bottom: 0px; margin: 0;}
+
+#footer {
+	font-size: 0.8em; text-align: center; font-style: italic;
+	border-top: 1px solid #aaa; padding: 10px 0; margin-top: 20px;
+}
+
+/* Stories */
+
+dl.story-data, dl.story-data dt, dl.story-data dd { margin: 0; padding: 0; display: block; }
+dl.story-data { font-size: 0.9em; }
+dl.story-data dt { font-weight: bold; float: left; clear: left; width: 7em; }
+dl.story-data dd { padding-left: 8em; }
+
+/* story view */
+
+#story {
+	font-size: 16px;
+	border: 1px solid #b95;
+	-webkit-box-shadow: 3px 3px 3px #aaa;
+	padding: 20px 30px 10px;
+	background: #fcf5ed;
+	margin: 20px 0;
+}
+#story h2 { font-size: 36px; margin: 8px 0;}
+#story .summary { font-size: 18px; margin: 8px 0;}
+#story-content { margin-top: 35px; }
+
+/* login view */
+
+body.login {background: url(/static/images/fabric.png);
+width: 30em; margin: 0 auto; margin-top: 200px;
+}
+body.login h2 { display: none; }
+body.login button { font-size: inherit; }

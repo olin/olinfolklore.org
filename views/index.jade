@@ -1,0 +1,18 @@
+h2 Newest Stories
+p: a(href='/stories/?new') Post a new story
+ul#stories
+  each story in stories
+    li
+      h3.story-title: a(href="/stories/#{story.id}") #{story.title}
+      p.story-summary #{story.summary}
+      dl.story-data
+        dt Date
+        dd: em #{story.occurred}
+        dt Author
+        dd #{story.user}
+        dt Tags
+        dd #{story.tags.join(', ')}
+        dt Comments
+        dd #{story.comments.length}
+        dt Favorited
+        dd #{story.favorites.length} time#{story.favorites.length == 1 ? '' : 's'}
