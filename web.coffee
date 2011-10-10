@@ -164,7 +164,7 @@ app.post "/login", (req, res) ->
 			res.send {email: null, message: "Not able to verify email address."}
 		# else if email isn't an olin email
 		else
-			res.session.user = "timothy.ryan@students.olin.edu"
+			req.session.user = "timothy.ryan@students.olin.edu"
 
 			# Create user if she doesn't exist.
 			User.findById res.session.user, (err, user) ->
