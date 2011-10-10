@@ -71,7 +71,7 @@ app.use express.session
 # routes
 ############################################################################
 
-verifyEmail = (assertion, cb) ->
+verifyEmail = (req, assertion, cb) ->
 	opts =
 		host: 'diresworb.org'
 		path: "/verify"
@@ -158,7 +158,7 @@ navigator.id.getVerifiedEmail(function(assertion) {
 """
 
 app.post "/login", (req, res) ->
-	verifyEmail req.body.assertion, (email) ->
+	verifyEmail req, req.body.assertion, (email) ->
 		if not email
 			res.send {email: null, message: "Not able to verify email address."}
 		# else if email isn't an olin email
