@@ -6,20 +6,20 @@
 
 UserSchema = new Schema
 	_id: String
+	name: String
 	password: String
 	registered: Date
 
 CommentSchema = new Schema
-	user: Schema.ObjectId
-	title: String
+	user: String
 	time: Date
 	content: String
 
 StorySchema = new Schema
-	user: Schema.ObjectId
+	user: { type: String, ref: 'User' }
 	title: String
 	time: Date
-	comments: [CommentSchema]
+	occurred: Date
 	characters: [Schema.ObjectId]
 	tags: [String]
 	summary: String
@@ -27,7 +27,8 @@ StorySchema = new Schema
 	content: String
 	photo: Boolean
 	caption: String
-	likes: [Schema.ObjectId]
+	favorites: [String]
+	comments: [CommentSchema]
 
 #
 # Models
