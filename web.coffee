@@ -166,22 +166,26 @@ app.post "/login", (req, res) ->
 	verifyEmail audience, assertion, (email) ->
 		if not email
 			res.send {email: null, message: "Not able to verify email address."}
-		# else if email isn't an olin email
-		else
-			if email == 'id@timryan.org'
-				email = "timothy.ryan@students.olin.edu"
+			return
+		
+		# Check for valid Olin emails.
+		if email == 'id@timryan.org'
+			email = "timothy.ryan@students.olin.edu"
+		unless email.match /@(students|alumni).olin.edu/
+			res.send {email: null, message: "Only valid @students.olin.edu or @alumni.olin.edu email addresses permitted."}
+			return
 
-			# Create user if she doesn't exist.
-			User.findById req.session.user, (err, user) ->
-				if not user
-					user = new User()
-					user._id = email
-					user.name = email.replace /@.*$/, ''
-					user.registered = new Date()
-					user.save()
+		# Create user if she doesn't exist.
+		User.findById req.session.user, (err, user) ->
+			if not user
+				user = new User()
+				user._id = email
+				user.name = email.replace /@.*$/, ''
+				user.registered = new Date()
+				user.save()
 
-				req.session.user = user._id
-				res.send {email: email, message: "You are now logged in as #{email}."}
+			req.session.user = user._id
+			res.send {email: email, message: "You are now logged in as #{email}."}
 
 app.post "/logout", (req, res) ->
 	req.session.user = null
