@@ -125,10 +125,10 @@ app.post "/identities", (req, res) ->
 					console.log "assertion verified successfully for email:", email
 				else
 					console.log "failed to verify assertion:", verifierResp.reason
-					res.json email
+					res.send {email: email}
 			catch e
 				console.log "non-JSON response from verifier"
-				res.json null
+				res.send {email: null}
 	vreq.setHeader "Content-Type", "application/x-www-form-urlencoded"
 	audience = (if req.headers["host"] then req.headers["host"] else 'olinfolklore.org')
 	data = querystring.stringify
