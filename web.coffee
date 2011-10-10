@@ -145,7 +145,9 @@ navigator.id.getVerifiedEmail(function(assertion) {
     if (assertion) {
        console.log(assertion);
        $.post('/login', {assertion: assertion}, function (data) {
-       		console.log(data);
+       		alert(data.message);
+       		if (data.email)
+       			window.location.pathname = '/'
        });
     } else {
         // something went wrong!  the user isn't logged in.
