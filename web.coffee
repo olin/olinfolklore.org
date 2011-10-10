@@ -124,7 +124,9 @@ app.get '/', populateUser, (req, res) ->
 		res.send """
 
 <h1>Olinfolklore</h1>
-<p>Logged in as #{req.user.name} (#{req.user._id}).</p>
+<form method="post" action="/logout">
+<p>Logged in as #{req.user.name} (#{req.user._id}). <button type="submit">Logout?</button></p>
+</form>
 
 <h2>Stories</h2>
 <ul>
