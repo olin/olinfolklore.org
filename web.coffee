@@ -91,7 +91,7 @@ verifyEmail = (audience, assertion, cb) ->
 					console.log "failed to verify assertion:", verifierResp.reason
 				cb email
 			catch e
-				console.log "non-JSON response from verifier"
+				console.log "non-JSON response from verifier", e
 				cb null
 	vreq.setHeader "Content-Type", "application/x-www-form-urlencoded"
 	data = querystring.stringify
