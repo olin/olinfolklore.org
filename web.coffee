@@ -179,6 +179,7 @@ app.post "/login", (req, res) ->
 					user.name = email.replace /@.*$/, ''
 					user.registered = new Date()
 					user.save()
+					console.log user
 
 				res.send {email: email, message: "You are now logged in as #{email}."}
 
